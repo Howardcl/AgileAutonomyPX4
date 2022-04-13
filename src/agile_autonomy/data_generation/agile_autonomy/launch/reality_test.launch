@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="quad_name" default="hummingbird"/>
+    <arg name="use_mpc" default="true"/>
+    <arg name="enable_command_feedthrough" default="true"/>
+
+    <!-- 真机飞控部分-->
+    <include file="$(find rpg_rotors_interface)/launch/basics/base_quad_control_reality.launch">
+        <arg name="quad_name" value="$(arg quad_name)"/>
+        <arg name="use_mpc" value="$(arg use_mpc)"/>
+        <arg name="enable_command_feedthrough" value="$(arg enable_command_feedthrough)"/>
+    </include>
+
+    <param name="/$(arg quad_name)/agile_autonomy/general/real_world_exp" value="true"/>
+    <param name="/$(arg quad_name)/agile_autonomy/general/velocity_estimate_in_world_frame" value="false"/>
+    <param name="/$(arg quad_name)/agile_autonomy/general/process_every_nth_odometry" value="20"/>
+    <!-- hacky parameters to change takeoff -->
+    <param name="/hummingbird/autopilot/optitrack_start_height" value="2.0"/>
+    <param name="/hummingbird/autopilot/optitrack_start_land_timeout" value="20.0"/>
+
+    <group ns="$(arg quad_name)">
+        <!-- Trajectory Planning -->
+        <node pkg="agile_autonomy" type="agile_autonomy" name="agile_autonomy" output="screen">
+            <rosparam file="$(find agile_autonomy)/parameters/default.yaml"/>
+            <rosparam file="$(find agile_autonomy)/parameters/flightmare.yaml"/>
+            <rosparam file="$(find agile_autonomy)/parameters/mpc_params.yaml"/>
+            <rosparam file="$(find state_predictor)/parameters/hummingbird.yaml"/>
+            <param name="data_dir" value="$(find agile_autonomy)/../data"/>
+            <remap from="completed_global_plan" to="/test_primitive/completed_planning"/>
+        </node>
+    </group>
+
+    <!-- Global Planning 全局规划 && 打标签 在实机上应该不需要
+    <include file="$(find mpl_test_node)/launch/ellipsoid_planner_node/global_planning.launch"/>
+
+    <include file="$(find traj_sampler)/launch/generate_label_8.launch"/> -->
+
+    <!-- 真机实验rviz可视化Visualization -->
+    <node pkg="rviz" type="rviz" name="viz_face" args="-d $(find agile_autonomy)/resources/rviz/reality.rviz"/>
+
+</launch>
